@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="score-card">
+        <h1>Viva Readiness Score</h1>
+        <div class="score">{{ report.score }}/10</div>
+        
+        <p style="font-size: 1.1rem; line-height: 1.6;">{{ report.feedback }}</p>
+        
+        <h3>⚠️ Concepts to Review:</h3>
+        <ul>
+            {% for item in report.weak_areas %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+        
+        <a href="/" class="btn btn-primary" style="text-align: center;">Practice Again</a>
+    </div>
+</body>
+</html>

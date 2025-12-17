@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>EXTERN - Setup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="card">
+        <h2>📂 Upload Project to EXTERN</h2>
+        <form action="/process_setup" method="POST" enctype="multipart/form-data">
+            <label>Student Name</label>
+            <input type="text" name="student_name" required>
+            <label>Project Report (PDF)</label>
+            <input type="file" name="pdf_file" accept=".pdf" required>
+            <label>GitHub URL</label>
+            <input type="text" name="github_url" required>
+            <button type="submit" class="btn-primary">Initialize Examiner</button>
+        </form>
+    </div>
+</body>
+</html>

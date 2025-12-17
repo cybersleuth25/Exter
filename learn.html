@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Learning Room</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container" style="width: 90%; max-width: 1000px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1>🎓 Tutor Mode: {{ student }}</h1>
+            <a href="/exam"><button class="btn-danger">Go to Exam >></button></a>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="card" style="width:auto; height: 500px; overflow-y:auto;">
+                <h3>Project Analysis</h3>
+                <div style="white-space: pre-wrap; line-height:1.6;">{{ summary }}</div>
+            </div>
+
+            <div class="card" style="width:auto; height: 500px; display:flex; flex-direction:column;">
+                <h3>Ask About Your Code</h3>
+                <div id="chat-box" style="flex-grow:1; overflow-y:auto; border:1px solid #30363d; padding:10px; margin-bottom:10px; border-radius:5px;"></div>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="question" placeholder="e.g., Explain the login function...">
+                    <button onclick="askTutor()" class="btn-primary" style="width:100px;">Ask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function askTutor() {
+            const q = document.getElementById('question').value;
+            if(!q) return;
+            
+            // Add User Msg
+            const box = document.getElementById('chat-box');
+            box.innerHTML += `<div class="message user"><strong>YOU:</strong> ${q}</div>`;
+            document.getElementById('question').value = "";
+
+            // Fetch AI Msg
+            const res = await fetch('/api/ask_tutor', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({question: q})
+            });
+            const data = await res.json();
+            box.innerHTML += `<div class="message examiner" style="border-left-color:#8957e5;"><strong>TUTOR:</strong> ${data.response}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+</body>
+</html>
