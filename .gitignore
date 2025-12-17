@@ -1,0 +1,5 @@
+.env
+__pycache__/
+instance/
+viva.db
+.DS_Store

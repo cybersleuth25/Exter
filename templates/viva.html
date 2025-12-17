@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viva Room</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>EXAM ROOM: {{ session.student_name }}</h1>
+        
+        <div id="chat-box">
+            </div>
+
+        <div id="loading" style="display:none;">
+            Examiner is reviewing your code...
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="answer" placeholder="Type your answer here..." onkeydown="if(event.key === 'Enter') sendAnswer()">
+            <button onclick="sendAnswer()" class="btn-reply">Reply</button>
+        </div>
+        
+        <a href="/finish/{{ session.id }}" style="width: 100%;">
+            <button class="btn-danger">End Exam</button>
+        </a>
+    </div>
+
+    <script>
+        const sessionId = "{{ session.id }}";
+
+        function appendMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            div.innerHTML = `<strong>${role.toUpperCase()}:</strong> ${text}`;
+            document.getElementById('chat-box').appendChild(div);
+            
+            // Auto-scroll to bottom
+            const box = document.getElementById('chat-box');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function initChat() {
+            // Show loading while waiting for first question
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId, answer: null })
+                });
+                const data = await res.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.response) {
+                    appendMessage('examiner', data.response);
+                    speak(data.response);
+                }
+            } catch (e) {
+                console.error("Error:", e);
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function sendAnswer() {
+            const text = document.getElementById('answer').value;
+            if (!text) return;
+
+            appendMessage('user', text);
+            document.getElementById('answer').value = '';
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId, answer: text })
+                });
+                const data = await res.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                appendMessage('examiner', data.response);
+                speak(data.response);
+            } catch (e) {
+                alert("Connection Error. Please try again.");
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // Start the exam automatically
+        initChat();
+    </script>
+</body>
+</html>

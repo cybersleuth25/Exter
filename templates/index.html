@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Extern - Setup</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="card">
+        <h2>Start Viva Simulation</h2>
+        <form action="/setup" method="POST" enctype="multipart/form-data">
+            <label>Student Name</label>
+            <input type="text" name="student_name" placeholder="Enter your name" required>
+            
+            <label>Upload Project Report (PDF)</label>
+            <input type="file" name="pdf_file" accept=".pdf" required>
+            
+            <label>GitHub Repository URL</label>
+            <input type="text" name="github_url" placeholder="https://github.com/username/repo" required>
+            
+            <button type="submit" class="btn-primary">Enter Exam Room</button>
+        </form>
+    </div>
+</body>
+</html>
