@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Room</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .container { max-width: 800px; margin-top: 50px; }
+        #chat-box { height: 400px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; border: 1px solid #30363d; }
+        .controls { display: flex; gap: 10px; margin-top: 20px; }
+        .examiner { color: #f85149; margin-bottom: 10px; line-height: 1.5; }
+        .user { color: #58a6ff; text-align: right; margin-bottom: 10px; }
+        
+        /* New Voice Controls */
+        .voice-settings {
+            background: #161b22;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid #30363d;
+        }
+        select {
+            background: #0d1117;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 5px;
+            border-radius: 4px;
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>EXAM ROOM: {{ student }}</h1>
+            <a href="/score"><button class="btn-danger" style="padding: 5px 10px; font-size: 0.9rem;">End Exam</button></a>
+        </div>
+
+        <div class="voice-settings">
+            <span style="font-size: 0.9rem;">🎙️ Examiner Voice:</span>
+            <select id="voiceSelect" onchange="testVoice()"></select>
+        </div>
+        
+        <div id="chat-box"></div>
+
+        <div id="loading" style="display:none; color: #8b949e; text-align: center; margin-top: 10px;">
+            <em>Examiner is thinking...</em>
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="answer" placeholder="Type your answer here..." onkeydown="if(event.key === 'Enter') sendAnswer()">
+            <button onclick="sendAnswer()" class="btn-primary">Reply</button>
+        </div>
+    </div>
+
+    <script>
+        let voices = [];
+        const synth = window.speechSynthesis;
+
+        // 1. Load Voices & Auto-Select the Best One
+        function loadVoices() {
+            voices = synth.getVoices();
+            const voiceSelect = document.getElementById('voiceSelect');
+            voiceSelect.innerHTML = '';
+
+            let preferredIndex = 0;
+
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = index;
+                voiceSelect.appendChild(option);
+
+                // Auto-select priority: Google US English > Microsoft Natural > Zira
+                if (voice.name.includes("Google US English") || voice.name.includes("Natural")) {
+                    preferredIndex = index;
+                }
+            });
+
+            voiceSelect.selectedIndex = preferredIndex;
+        }
+
+        // Browsers load voices asynchronously, so we wait for them
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        loadVoices();
+
+        // 2. The Improved Speak Function
+        function speak(text) {
+            // Cancel any current speech
+            if (synth.speaking) synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Get selected voice
+            const selectedIndex = document.getElementById('voiceSelect').value;
+            if (voices[selectedIndex]) {
+                utterance.voice = voices[selectedIndex];
+            }
+
+            // Humanize logic: Slower rate, slightly lower pitch
+            utterance.rate = 0.9;  // 0.9 is more thoughtful/serious
+            utterance.pitch = 1.0; 
+
+            synth.speak(utterance);
+        }
+
+        function testVoice() {
+            speak("Is this voice clear enough for the examination?");
+        }
+
+        // 3. Chat Logic
+        window.onload = function() {
+            // Wait 1 second for voices to load before starting
+            setTimeout(initChat, 1000);
+        };
+
+        async function initChat() {
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const res = await fetch('/api/exam_chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ answer: null })
+                });
+                const data = await res.json();
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.response) {
+                    appendMessage('examiner', data.response);
+                    speak(data.response);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function sendAnswer() {
+            const text = document.getElementById('answer').value;
+            if (!text) return;
+
+            appendMessage('user', text);
+            document.getElementById('answer').value = '';
+            synth.cancel(); // Stop talking if interrupted
+            
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const res = await fetch('/api/exam_chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ answer: text })
+                });
+                const data = await res.json();
+                document.getElementById('loading').style.display = 'none';
+                
+                appendMessage('examiner', data.response);
+                speak(data.response);
+            } catch (e) {
+                alert("Connection Error");
+            }
+        }
+
+        function appendMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = role;
+            div.innerHTML = `<strong>${role.toUpperCase()}:</strong> ${text}`;
+            document.getElementById('chat-box').appendChild(div);
+            const box = document.getElementById('chat-box');
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+</body>
+</html>
